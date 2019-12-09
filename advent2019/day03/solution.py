@@ -1,55 +1,41 @@
 import copy
-import numpy
+import numpy as np
+import logging
+from shapely.geometry import LineString
 
-from advent2019.lib import utils
+from adventofcode.advent2019.lib import utils
+
 logger = utils.logger
 logger.setLevel(logging.INFO)
 
 data = utils.loadInput("input.txt")
-data = [int(x) for x in (data[0].strip("\n").split(","))]
-if not data :
-    logger.error("No valid input data")
+pathAdata = data[0].strip("\n").split(",")
+pathBdata = data[1].strip("\n").split(",")
 
-class Solution(object):
-    PROCESS = {1: lambda x, y: x + y, 2: lambda x, y: x * y}
+PATH_PROCESS = {"L": (-1, 0), "R": (1, 0), "U": (0, 1), "D": (0, -1)}
 
-    def __init__(self, inputs):
-        self.inputs = inputs
 
-    @property
-    def getInputs(self):
-        return self.inputs
+class PathObject(object):
+    def __init__(self, inputdata):
+        self.units = [(0, 0)]
+        self.currentPos = (0, 0)
+        self.move(inputdata)
 
-    def runA(self):
-        i = 0
-        while i >= 0:
-            i = self.runProcess(i)
+    def move(self, inputs):
+        for input in inputs:
+            dir = np.array(PATH_PROCESS[input[0]])
+            units = int(input[1:])
+            moved = (dir * units)
+            self.currentPos += moved
+            self.units.append(tuple(self.currentPos))
 
-    def runProcess(self, i):
-        input = self.inputs[i]
-        if input != 99:
-            if input in self.PROCESS.keys():
-                indexX, indexY = [self.inputs[i+1], self.inputs[i+2]]
-                x = self.inputs[indexX]
-                y = self.inputs[indexY]
-                loc = self.inputs[i+3]
-                result = self.PROCESS[input](x, y)
-                self.inputs[loc] = result
-                return (i + 4)
 
-        else:
-            return -1
+pathA = PathObject(pathAdata)
+pathB = PathObject(pathBdata)
 
-output = None
-for arr in [(x, y) for x in range(100) for y in range(100)]:
-    newdata = copy.copy(data)
-    newdata[1] = arr[0]
-    newdata[2] = arr[1]
-    solution = Solution(newdata)
-    solution.run()
-    output = solution.getInputs[0]
-    if output == 19690720:
-        print arr, "result:", (100*arr[0]) + arr[1]
-        break
-    del(solution)
+lineA = LineString(pathA.units)
+lineB = LineString(pathB.units)
 
+intersections = lineA.intersection(lineB)
+intersections = sorted(intersections, key=lambda x: (abs(x.x) + abs(x.y)))
+print abs(intersections[1].x) + abs(intersections[1].y)
